@@ -12,60 +12,70 @@ import (
 )
 
 const (
-	ListUri = "/rest/2.0/xpan/file?method=list"
-	MetasUri = "/rest/2.0/xpan/multimedia?method=filemetas"
+	ListUri      = "/rest/2.0/xpan/file?method=list"
+	MetasUri     = "/rest/2.0/xpan/multimedia?method=filemetas"
 	StreamingUri = "/rest/2.0/xpan/file?method=streaming"
 )
 
 type ListResponse struct {
 	conf.CloudDiskResponseBase
 	List []struct {
-		FsID 	uint64 `json:"fs_id"`
-		Path      string `json:"path"`
-		ServerFileName string `json:"server_filename"`
-		Size      int    `json:"size"`
-		IsDir    int    `json:"isdir"`
-		Category    int    `json:"category"`
-		Md5       string `json:"md5"`
-		DirEmpty string `json:"dir_empty"`
-		Thumbs map[string]string `json:"thumbs"`
-		LocalCtime     int    `json:"local_ctime"`
-		LocalMtime     int    `json:"local_mtime"`
-		ServerCtime     int    `json:"server_ctime"`
-		ServerMtime     int    `json:"server_mtime"`
+		FsID           uint64            `json:"fs_id"`
+		Path           string            `json:"path"`
+		ServerFileName string            `json:"server_filename"`
+		Size           int               `json:"size"`
+		IsDir          int               `json:"isdir"`
+		Category       int               `json:"category"`
+		Md5            string            `json:"md5"`
+		DirEmpty       string            `json:"dir_empty"`
+		Thumbs         map[string]string `json:"thumbs"`
+		LocalCtime     int               `json:"local_ctime"`
+		LocalMtime     int               `json:"local_mtime"`
+		ServerCtime    int               `json:"server_ctime"`
+		ServerMtime    int               `json:"server_mtime"`
 	}
 }
 
 type MetasResponse struct {
-	ErrorCode int  	 `json:"errno"`
-	ErrorMsg  string `json:"errmsg"`
-	RequestID int
+	ErrorCode    int    `json:"errno"`
+	ErrorMsg     string `json:"errmsg"`
+	RequestID    int
 	RequestIDStr string `json:"request_id"`
-	List []struct {
-		FsID 	uint64 `json:"fs_id"`
-		Path      string `json:"path"`
-		Category    int    `json:"category"`
-		FileName string `json:"filename"`
-		IsDir    int    `json:"isdir"`
-		Size      int    `json:"size"`
-		Md5       string `json:"md5"`
-		DLink string `json:"dlink"`
-		Thumbs map[string]string `json:"thumbs"`
-		ServerCtime     int    `json:"server_ctime"`
-		ServerMtime     int    `json:"server_mtime"`
-		DateTaken int `json:"date_taken"`
-		Width int `json:"width"`
-		Height int `json:"height"`
+	List         []struct {
+		FsID        uint64            `json:"fs_id"`
+		Path        string            `json:"path"`
+		Category    int               `json:"category"`
+		FileName    string            `json:"filename"`
+		IsDir       int               `json:"isdir"`
+		Size        int               `json:"size"`
+		Md5         string            `json:"md5"`
+		DLink       string            `json:"dlink"`
+		Thumbs      map[string]string `json:"thumbs"`
+		ServerCtime int               `json:"server_ctime"`
+		ServerMtime int               `json:"server_mtime"`
+		DateTaken   int               `json:"date_taken"`
+		Width       int               `json:"width"`
+		Height      int               `json:"height"`
 	}
 }
 
 type ManagerResponse struct {
 	conf.CloudDiskResponseBase
-	Info []struct{
-		Path string
+	Info []struct {
+		Path   string
 		TaskID int
-		Errno int
+		Errno  int
 	}
+}
+
+type CreateDirResponse struct {
+	conf.CloudDiskResponseBase
+	Path     string `json:"path"`
+	Ctime    int    `json:"ctime"`
+	Mtime    int    `json:"mtime"`
+	FsID     uint64 `json:"fs_id"`
+	IsDir    int    `json:"isdir"`
+	Category int    `json:"category"`
 }
 
 type File struct {
@@ -78,7 +88,7 @@ func NewFileClient(accessToken string) *File {
 	}
 }
 
-// 获取文件列表
+// List 获取文件列表
 func (f *File) List(dir string, start, limit int) (ListResponse, error) {
 	ret := ListResponse{}
 
@@ -104,14 +114,44 @@ func (f *File) List(dir string, start, limit int) (ListResponse, error) {
 		return ret, err
 	}
 
-	if ret.ErrorCode != 0 {//错误码不为0
+	if ret.ErrorCode != 0 { //错误码不为0
 		return ret, errors.New(fmt.Sprintf("error_code:%d, error_msg:%s", ret.ErrorCode, ret.ErrorMsg))
 	}
 
 	return ret, nil
 }
 
-// 通过FsID获取文件信息
+func (f *File) CreateDir(path string) (CreateDirResponse, error) {
+	ret := CreateDirResponse{}
+	// path urlencode
+	v := url.Values{}
+	v.Add("path", path)
+	v.Add("isdir", "1")
+	body := v.Encode()
+
+	requestUrl := conf.OpenApiDomain + CreateUri + "&access_token=" + f.AccessToken
+
+	headers := make(map[string]string)
+	resp, err := httpclient.Post(requestUrl, headers, body)
+	if err != nil {
+		log.Println("httpclient.Post failed, err:", err)
+		return ret, err
+	}
+
+	if err := json.Unmarshal(resp.Body, &ret); err != nil {
+		log.Printf("json.Unmarshal failed, resp[%s], err[%v]", string(resp.Body), err)
+		return ret, err
+	}
+
+	if ret.ErrorCode != 0 { //错误码不为0
+		log.Println("file create failed, resp:", string(resp.Body))
+		return ret, errors.New(fmt.Sprintf("error_code:%d, error_msg:%s", ret.ErrorCode, ret.ErrorMsg))
+	}
+
+	return ret, nil
+}
+
+// Metas 通过FsID获取文件信息
 func (f *File) Metas(fsIDs []uint64) (MetasResponse, error) {
 	ret := MetasResponse{}
 
@@ -143,7 +183,7 @@ func (f *File) Metas(fsIDs []uint64) (MetasResponse, error) {
 		return ret, err
 	}
 
-	if ret.ErrorCode != 0 {//错误码不为0
+	if ret.ErrorCode != 0 { //错误码不为0
 		return ret, errors.New(fmt.Sprintf("error_code:%d, error_msg:%s", ret.ErrorCode, ret.ErrorMsg))
 	}
 
@@ -155,7 +195,7 @@ func (f *File) Metas(fsIDs []uint64) (MetasResponse, error) {
 	return ret, nil
 }
 
-// 获取音视频在线播放地址，转码类型有M3U8_AUTO_480=>视频ts、M3U8_FLV_264_480=>视频flv、M3U8_MP3_128=>音频mp3、M3U8_HLS_MP3_128=>音频ts
+// Streaming 获取音视频在线播放地址，转码类型有M3U8_AUTO_480=>视频ts、M3U8_FLV_264_480=>视频flv、M3U8_MP3_128=>音频mp3、M3U8_HLS_MP3_128=>音频ts
 func (f *File) Streaming(path string, transcodingType string) (string, error) {
 	ret := ""
 
