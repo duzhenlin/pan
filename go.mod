@@ -1,4 +1,4 @@
-module github.com/jsyzchen/pan
+module github.com/duzhenlin/pan
 
 go 1.22
 

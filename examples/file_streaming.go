@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/jsyzchen/pan/file"
+	"github.com/duzhenlin/pan/file"
 )
 
 func main() {

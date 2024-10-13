@@ -2,9 +2,9 @@ package file
 
 import (
 	"errors"
-	"github.com/jsyzchen/pan/account"
-	"github.com/jsyzchen/pan/conf"
-	"github.com/jsyzchen/pan/utils/file"
+	"github.com/duzhenlin/pan/account"
+	"github.com/duzhenlin/pan/conf"
+	"github.com/duzhenlin/pan/utils/file"
 	"log"
 	"net/url"
 )
