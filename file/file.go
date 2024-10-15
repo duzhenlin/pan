@@ -82,6 +82,12 @@ type File struct {
 	AccessToken string
 }
 
+type CreateDirOption struct {
+	RType string `json:"r_type"`
+	Path  string `json:"path"`
+	Mode  string `json:"mode"`
+}
+
 func NewFileClient(accessToken string) *File {
 	return &File{
 		AccessToken: accessToken,
@@ -121,12 +127,31 @@ func (f *File) List(dir string, start, limit int) (ListResponse, error) {
 	return ret, nil
 }
 
-func (f *File) CreateDir(path string) (CreateDirResponse, error) {
+// CreateDir 创建目录
+/*
+ */
+func (f *File) CreateDir(opts CreateDirOption) (CreateDirResponse, error) {
+
+	rType := "1"
+	path := "/"
+	mode := "1"
+	if opts.RType != "" {
+		rType = opts.RType
+	}
+	if opts.Path != "" {
+		path = opts.Path
+	}
+	if opts.Mode != "" {
+		mode = opts.Mode
+	}
+
 	ret := CreateDirResponse{}
 	// path urlencode
 	v := url.Values{}
 	v.Add("path", path)
 	v.Add("isdir", "1")
+	v.Add("rtype", rType)
+	v.Add("mode", mode)
 	body := v.Encode()
 
 	requestUrl := conf.OpenApiDomain + CreateUri + "&access_token=" + f.AccessToken

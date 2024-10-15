@@ -1,7 +1,7 @@
 package httpclient
 
 import (
-	"io/ioutil"
+	"io"
 	"math/rand"
 	"net/http"
 	"strings"
@@ -49,7 +49,7 @@ func SendRequest(method string, url string, header map[string]string, body strin
 	}
 
 	defer response.Body.Close()
-	res.Body, err = ioutil.ReadAll(response.Body)
+	res.Body, err = io.ReadAll(response.Body)
 	if err != nil {
 		return res, err
 	}
@@ -73,7 +73,7 @@ func Head(url string, header map[string]string) (HttpResponse, error) {
 }
 
 func Delete(url string, header map[string]string) (HttpResponse, error) {
-	return SendRequest("DELETE", url, header,"")
+	return SendRequest("DELETE", url, header, "")
 }
 
 // 随机获取User-Agent

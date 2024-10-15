@@ -171,7 +171,7 @@ func (u *Uploader) Upload() (UploadResponse, error) {
 	return superFile2CommitRes, err
 }
 
-// preCreate
+// PreCreate preCreate
 func (u *Uploader) PreCreate() (PreCreateResponse, error) {
 	ret := PreCreateResponse{}
 
@@ -244,7 +244,6 @@ func (u *Uploader) PreCreate() (PreCreateResponse, error) {
 	return ret, nil
 }
 
-// superfile2 upload
 func (u *Uploader) SuperFile2Upload(uploadID string, partSeq int, partByte []byte) (SuperFile2UploadResponse, error) {
 	ret := SuperFile2UploadResponse{}
 
@@ -282,7 +281,7 @@ func (u *Uploader) SuperFile2Upload(uploadID string, partSeq int, partByte []byt
 	return ret, nil
 }
 
-// file create
+// Create 创建文件
 func (u *Uploader) Create(uploadID string, blockList []string) (UploadResponse, error) {
 	ret := UploadResponse{}
 
