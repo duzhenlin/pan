@@ -41,7 +41,7 @@ func (f *File) List(dir string, start, limit int) (ListResponse, error) {
 
 	if resp.StatusCode != 200 {
 		return ret, error_pan.NewBaiduPanError(
-			resp.StatusCode,
+			ret.ErrorCode,
 			fmt.Sprintf("HttpStatusCode is not equal to 200, httpStatusCode[%d], respBody[%s]", resp.StatusCode, string(resp.Body)),
 			strconv.FormatUint(ret.RequestID, 10),
 		)
@@ -53,7 +53,7 @@ func (f *File) List(dir string, start, limit int) (ListResponse, error) {
 
 	if ret.ErrorCode != 0 { //错误码不为0
 		return ret, error_pan.NewBaiduPanError(
-			resp.StatusCode,
+			ret.ErrorCode,
 			fmt.Sprintf("error_code:%d, error_msg:%s", ret.ErrorCode, ret.ErrorMsg),
 			strconv.FormatUint(ret.RequestID, 10),
 		)
@@ -81,7 +81,7 @@ func (f *File) CategoryList(dir string, start, limit int) (ListResponse, error) 
 
 	if resp.StatusCode != 200 {
 		return ret, error_pan.NewBaiduPanError(
-			resp.StatusCode,
+			ret.ErrorCode,
 			fmt.Sprintf("HttpStatusCode is not equal to 200, httpStatusCode[%d], respBody[%s]", resp.StatusCode, string(resp.Body)),
 			strconv.FormatUint(ret.RequestID, 10),
 		)
@@ -93,7 +93,7 @@ func (f *File) CategoryList(dir string, start, limit int) (ListResponse, error) 
 
 	if ret.ErrorCode != 0 { //错误码不为0
 		return ret, error_pan.NewBaiduPanError(
-			resp.StatusCode,
+			ret.ErrorCode,
 			fmt.Sprintf("error_code:%d, error_msg:%s", ret.ErrorCode, ret.ErrorMsg),
 			strconv.FormatUint(ret.RequestID, 10),
 		)
@@ -146,7 +146,7 @@ func (f *File) CreateDir(opts CreateDirOption) (CreateDirResponse, error) {
 	if ret.ErrorCode != 0 { //错误码不为0
 		log.Println("file create failed, resp:", string(resp.Body))
 		return ret, error_pan.NewBaiduPanError(
-			resp.StatusCode,
+			ret.ErrorCode,
 			fmt.Sprintf("error_code:%d, error_msg:%s", ret.ErrorCode, ret.ErrorMsg),
 			strconv.FormatUint(ret.RequestID, 10),
 		)
@@ -181,7 +181,7 @@ func (f *File) Metas(fsIDs []uint64) (MetasResponse, error) {
 
 	if resp.StatusCode != 200 {
 		return ret, error_pan.NewBaiduPanError(
-			resp.StatusCode,
+			ret.ErrorCode,
 			fmt.Sprintf("HttpStatusCode is not equal to 200, httpStatusCode[%d], respBody[%s]", resp.StatusCode, string(resp.Body)),
 			ret.RequestIDStr,
 		)
@@ -193,7 +193,7 @@ func (f *File) Metas(fsIDs []uint64) (MetasResponse, error) {
 
 	if ret.ErrorCode != 0 { //错误码不为0
 		return ret, error_pan.NewBaiduPanError(
-			resp.StatusCode,
+			ret.ErrorCode,
 			fmt.Sprintf("error_code:%d, error_msg:%s", ret.ErrorCode, ret.ErrorMsg),
 			ret.RequestIDStr,
 		)

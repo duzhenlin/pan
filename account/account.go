@@ -34,7 +34,7 @@ func (a *Account) UserInfo() (UserInfoResponse, error) {
 
 	if resp.StatusCode != 200 {
 		return ret, error_pan.NewBaiduPanError(
-			resp.StatusCode,
+			ret.ErrorCode,
 			fmt.Sprintf("HttpStatusCode is not equal to 200, httpStatusCode[%d], respBody[%s]", resp.StatusCode, string(resp.Body)),
 			ret.RequestIDStr,
 		)
@@ -46,7 +46,7 @@ func (a *Account) UserInfo() (UserInfoResponse, error) {
 
 	if ret.ErrorCode != 0 { //错误码不为0
 		return ret, error_pan.NewBaiduPanError(
-			resp.StatusCode,
+			ret.ErrorCode,
 			fmt.Sprintf("error_code:%d, error_msg:%s", ret.ErrorCode, ret.ErrorMsg),
 			ret.RequestIDStr,
 		)
@@ -81,7 +81,7 @@ func (a *Account) Quota() (QuotaResponse, error) {
 
 	if resp.StatusCode != 200 {
 		return ret, error_pan.NewBaiduPanError(
-			resp.StatusCode,
+			ret.ErrorCode,
 			fmt.Sprintf("HttpStatusCode is not equal to 200, httpStatusCode[%d], respBody[%s]", resp.StatusCode, string(resp.Body)),
 			strconv.FormatUint(ret.RequestID, 10),
 		)
@@ -93,7 +93,7 @@ func (a *Account) Quota() (QuotaResponse, error) {
 
 	if ret.ErrorCode != 0 { //错误码不为0
 		return ret, error_pan.NewBaiduPanError(
-			resp.StatusCode,
+			ret.ErrorCode,
 			fmt.Sprintf("error_code:%d, error_msg:%s", ret.ErrorCode, ret.ErrorMsg),
 			strconv.FormatUint(ret.RequestID, 10),
 		)
