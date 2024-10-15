@@ -2,41 +2,14 @@ package account
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/duzhenlin/pan/conf"
+	"github.com/duzhenlin/pan/error_pan"
 	"github.com/duzhenlin/pan/utils/httpclient"
 	"log"
 	"net/url"
 	"strconv"
 )
-
-type UserInfoResponse struct {
-	BaiduName    string `json:"baidu_name"`
-	NetdiskName  string `json:"netdisk_name"`
-	AvatarUrl    string `json:"avatar_url"`
-	VipType      int    `json:"vip_type"`
-	Uk           int    `json:"uk"` //uk字段对应auth.UserInfo方法返回的user_id
-	ErrorCode    int    `json:"errno"`
-	ErrorMsg     string `json:"errmsg"`
-	RequestID    int
-	RequestIDStr string `json:"request_id"` //用户信息接口返回的request_id为string类型
-}
-
-type QuotaResponse struct {
-	conf.CloudDiskResponseBase
-	Total  int  `json:"total"`
-	Used   int  `json:"used"`
-	Free   int  `json:"free"`
-	Expire bool `json:"expire"`
-}
-
-type Account struct {
-	AccessToken string
-}
-
-const UserInfoUri = "/rest/2.0/xpan/nas?method=uinfo"
-const QuotaUri = "/api/quota"
 
 func NewAccountClient(accessToken string) *Account {
 	return &Account{
@@ -60,7 +33,11 @@ func (a *Account) UserInfo() (UserInfoResponse, error) {
 	}
 
 	if resp.StatusCode != 200 {
-		return ret, errors.New(fmt.Sprintf("HttpStatusCode is not equal to 200, httpStatusCode[%d], respBody[%s]", resp.StatusCode, string(resp.Body)))
+		return ret, error_pan.NewBaiduPanError(
+			resp.StatusCode,
+			fmt.Sprintf("HttpStatusCode is not equal to 200, httpStatusCode[%d], respBody[%s]", resp.StatusCode, string(resp.Body)),
+			ret.RequestIDStr,
+		)
 	}
 
 	if err := json.Unmarshal(resp.Body, &ret); err != nil {
@@ -68,7 +45,11 @@ func (a *Account) UserInfo() (UserInfoResponse, error) {
 	}
 
 	if ret.ErrorCode != 0 { //错误码不为0
-		return ret, errors.New(fmt.Sprintf("error_code:%d, error_msg:%s", ret.ErrorCode, ret.ErrorMsg))
+		return ret, error_pan.NewBaiduPanError(
+			resp.StatusCode,
+			fmt.Sprintf("error_code:%d, error_msg:%s", ret.ErrorCode, ret.ErrorMsg),
+			ret.RequestIDStr,
+		)
 	}
 
 	//兼容用户信息接口返回的request_id为string类型的问题
@@ -99,7 +80,11 @@ func (a *Account) Quota() (QuotaResponse, error) {
 	}
 
 	if resp.StatusCode != 200 {
-		return ret, errors.New(fmt.Sprintf("HttpStatusCode is not equal to 200, httpStatusCode[%d], respBody[%s]", resp.StatusCode, string(resp.Body)))
+		return ret, error_pan.NewBaiduPanError(
+			resp.StatusCode,
+			fmt.Sprintf("HttpStatusCode is not equal to 200, httpStatusCode[%d], respBody[%s]", resp.StatusCode, string(resp.Body)),
+			strconv.FormatUint(ret.RequestID, 10),
+		)
 	}
 
 	if err := json.Unmarshal(resp.Body, &ret); err != nil {
@@ -107,7 +92,11 @@ func (a *Account) Quota() (QuotaResponse, error) {
 	}
 
 	if ret.ErrorCode != 0 { //错误码不为0
-		return ret, errors.New(fmt.Sprintf("error_code:%d, error_msg:%s", ret.ErrorCode, ret.ErrorMsg))
+		return ret, error_pan.NewBaiduPanError(
+			resp.StatusCode,
+			fmt.Sprintf("error_code:%d, error_msg:%s", ret.ErrorCode, ret.ErrorMsg),
+			strconv.FormatUint(ret.RequestID, 10),
+		)
 	}
 
 	return ret, nil

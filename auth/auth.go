@@ -1,64 +1,17 @@
+// Package auth
+//
 // 百度授权相关，wiki地址 https://openauth.baidu.com/doc/doc.html
 package auth
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/duzhenlin/pan/conf"
+	"github.com/duzhenlin/pan/error_pan"
 	"github.com/duzhenlin/pan/utils/httpclient"
 	"log"
 	"net/url"
 )
-
-type Auth struct {
-	ClientID     string
-	ClientSecret string
-}
-
-type AccessTokenResponse struct {
-	AccessToken      string `json:"access_token"`
-	ExpiresIn        int    `json:"expires_in"`
-	RefreshToken     string `json:"refresh_token"`
-	Scope            string `json:"scope"`
-	SessionKey       string `json:"session_key"`
-	SessionSecret    string `json:"session_secret"`
-	Error            string `json:"error"`
-	ErrorDescription string `json:"error_description"`
-}
-
-type RefreshTokenResponse struct {
-	AccessToken      string `json:"access_token"`
-	ExpiresIn        int    `json:"expires_in"`
-	RefreshToken     string `json:"refresh_token"`
-	Scope            string `json:"scope"`
-	SessionKey       string `json:"session_key"`
-	SessionSecret    string `json:"session_secret"`
-	Error            string `json:"error"`
-	ErrorDescription string `json:"error_description"`
-}
-
-type UserInfoResponse struct {
-	OpenID       string `json:"openid"`
-	UnionID      string `json:"unionid"` // 百度用户统一标识，对当前开发者帐号唯一
-	UserID       string `json:"userid"`  // 老版百度用户的唯一标识，后续不在返回该字段，user_id字段对应account.UserInfo方法返回的uk
-	UserName     string `json:"username"`
-	SecureMobile int    `json:"securemobile"` // 当前用户绑定手机号，需要向百度开放平台单独申请权限
-	Portrait     string `json:"portrait"`
-	UserDetail   string `json:"userdetail"`
-	Birthday     string `json:"birthday"`
-	Marriage     string `json:"marriage"`
-	Sex          string `json:"sex"`
-	Blood        string `json:"blood"`
-	IsBindMobile string `json:"is_bind_mobile"`
-	IsRealName   string `json:"is_realname"`
-	ErrorCode    int    `json:"errno"`
-	ErrorMsg     string `json:"errmsg"`
-}
-
-const OAuthUri = "/oauth/2.0/authorize"
-const OAuthTokenUri = "/oauth/2.0/token"
-const UserInfoUri = "/rest/2.0/passport/users/getInfo"
 
 func NewAuthClient(clientID string, clientSecret string) *Auth {
 	return &Auth{
@@ -67,7 +20,7 @@ func NewAuthClient(clientID string, clientSecret string) *Auth {
 	}
 }
 
-// 获取授权页网址
+// OAuthUrl 获取授权页网址
 func (a *Auth) OAuthUrl(redirectUri string) string {
 	oAuthUrl := ""
 
@@ -84,7 +37,7 @@ func (a *Auth) OAuthUrl(redirectUri string) string {
 	return oAuthUrl
 }
 
-// 获取AccessToken
+// AccessToken 获取AccessToken
 func (a *Auth) AccessToken(code, redirectUri string) (AccessTokenResponse, error) {
 	ret := AccessTokenResponse{}
 
@@ -105,7 +58,11 @@ func (a *Auth) AccessToken(code, redirectUri string) (AccessTokenResponse, error
 	}
 
 	if resp.StatusCode != 200 {
-		return ret, errors.New(fmt.Sprintf("HttpStatusCode is not equal to 200, httpStatusCode[%d], respBody[%s]", resp.StatusCode, resp.Body))
+		return ret, error_pan.NewBaiduPanError(
+			resp.StatusCode,
+			fmt.Sprintf("HttpStatusCode is not equal to 200, httpStatusCode[%d], respBody[%s]", resp.StatusCode, string(resp.Body)),
+			"",
+		)
 	}
 
 	if err := json.Unmarshal(resp.Body, &ret); err != nil {
@@ -113,13 +70,18 @@ func (a *Auth) AccessToken(code, redirectUri string) (AccessTokenResponse, error
 	}
 
 	if ret.Error != "" { //有错误
-		return ret, errors.New(ret.ErrorDescription)
+
+		return ret, error_pan.NewBaiduPanError(
+			resp.StatusCode,
+			fmt.Sprintf("error_code:%s, error_msg:%s", ret.Error, ret.ErrorDescription),
+			"",
+		)
 	}
 
 	return ret, nil
 }
 
-// 刷新AccessToken
+// RefreshToken 刷新AccessToken
 func (a *Auth) RefreshToken(refreshToken string) (RefreshTokenResponse, error) {
 	ret := RefreshTokenResponse{}
 
@@ -139,7 +101,11 @@ func (a *Auth) RefreshToken(refreshToken string) (RefreshTokenResponse, error) {
 	}
 
 	if resp.StatusCode != 200 {
-		return ret, errors.New(fmt.Sprintf("HttpStatusCode is not equal to 200, httpStatusCode[%d], respBody[%s]", resp.StatusCode, string(resp.Body)))
+		return ret, error_pan.NewBaiduPanError(
+			resp.StatusCode,
+			fmt.Sprintf("HttpStatusCode is not equal to 200, httpStatusCode[%d], respBody[%s]", resp.StatusCode, string(resp.Body)),
+			"",
+		)
 	}
 
 	if err := json.Unmarshal(resp.Body, &ret); err != nil {
@@ -147,12 +113,17 @@ func (a *Auth) RefreshToken(refreshToken string) (RefreshTokenResponse, error) {
 	}
 
 	if ret.Error != "" { //有错误
-		return ret, errors.New(ret.ErrorDescription)
+		return ret, error_pan.NewBaiduPanError(
+			resp.StatusCode,
+			fmt.Sprintf("Error is not empty, httpStatusCode[%d], ErrorDescription[%s]", resp.StatusCode, ret.ErrorDescription),
+			"",
+		)
 	}
 
 	return ret, nil
 }
 
+// UserInfo
 // 获取授权用户的百度账号信息，可以通过unionid字段来识别多个百度产品授权的是否是同一用户
 // 注：获取网盘账号信息请使用account.UserInfo方法
 func (a *Auth) UserInfo(accessToken string) (UserInfoResponse, error) {
@@ -172,7 +143,11 @@ func (a *Auth) UserInfo(accessToken string) (UserInfoResponse, error) {
 	}
 
 	if resp.StatusCode != 200 {
-		return ret, errors.New(fmt.Sprintf("HttpStatusCode is not equal to 200, httpStatusCode[%d], respBody[%s]", resp.StatusCode, string(resp.Body)))
+		return ret, error_pan.NewBaiduPanError(
+			resp.StatusCode,
+			fmt.Sprintf("HttpStatusCode is not equal to 200, httpStatusCode[%d], respBody[%s]", resp.StatusCode, string(resp.Body)),
+			"",
+		)
 	}
 
 	if err := json.Unmarshal(resp.Body, &ret); err != nil {
@@ -180,7 +155,11 @@ func (a *Auth) UserInfo(accessToken string) (UserInfoResponse, error) {
 	}
 
 	if ret.ErrorCode != 0 { //有错误
-		return ret, errors.New(ret.ErrorMsg)
+		return ret, error_pan.NewBaiduPanError(
+			ret.ErrorCode,
+			fmt.Sprintf("ErrorCode is 0, ErrorCode[%d], ErrorMsg[%s]", ret.ErrorCode, ret.ErrorMsg),
+			"",
+		)
 	}
 
 	return ret, nil

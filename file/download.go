@@ -1,9 +1,9 @@
 package file
 
 import (
-	"errors"
 	"github.com/duzhenlin/pan/account"
 	"github.com/duzhenlin/pan/conf"
+	"github.com/duzhenlin/pan/error_pan"
 	"github.com/duzhenlin/pan/utils/file"
 	"log"
 	"net/url"
@@ -17,10 +17,6 @@ type Downloader struct {
 	AccessToken   string
 	TotalPart     int
 }
-
-const (
-	PcsFileDownloadUri = "/rest/2.0/pcs/file?method=download"
-)
 
 func NewDownloader(accessToken string, downloadLink string, localFilePath string) *Downloader {
 	return &Downloader{
@@ -51,7 +47,11 @@ func NewDownloaderWithPath(accessToken string, path string, localFilePath string
 func (d *Downloader) Download() error {
 	downloadLink := ""
 	if d.LocalFilePath == "" || d.AccessToken == "" {
-		return errors.New("param error, localFilePath is empty")
+		return error_pan.NewBaiduPanError(
+			-1,
+			"param error, localFilePath is empty",
+			"",
+		)
 	}
 
 	if d.DownloadLink != "" { //直接下载
@@ -66,7 +66,11 @@ func (d *Downloader) Download() error {
 		}
 		if len(metas.List) == 0 {
 			log.Println("file don't exist")
-			return errors.New("file don't exist")
+			return error_pan.NewBaiduPanError(
+				-1,
+				"file don't exist",
+				"",
+			)
 		}
 		downloadLink = metas.List[0].DLink
 	} else if d.Path != "" { // TODO 如何通过文件路径获取下载地址
@@ -76,11 +80,19 @@ func (d *Downloader) Download() error {
 		body := v.Encode()
 		downloadLink = conf.PcsApiDomain + PcsFileDownloadUri + "&" + body
 	} else {
-		return errors.New("param error")
+		return error_pan.NewBaiduPanError(
+			-1,
+			"param error",
+			"",
+		)
 	}
 
 	if downloadLink == "" {
-		return errors.New("param error, downloadLink is empty")
+		return error_pan.NewBaiduPanError(
+			-1,
+			"param error, downloadLink is empty",
+			"",
+		)
 	}
 
 	downloadLink += "&access_token=" + d.AccessToken

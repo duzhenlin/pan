@@ -4,11 +4,11 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/bitly/go-simplejson"
 	"github.com/duzhenlin/pan/account"
 	"github.com/duzhenlin/pan/conf"
+	"github.com/duzhenlin/pan/error_pan"
 	fileUtil "github.com/duzhenlin/pan/utils/file"
 	"github.com/duzhenlin/pan/utils/httpclient"
 	"io"
@@ -19,33 +19,6 @@ import (
 	"strconv"
 	"strings"
 )
-
-type UploadResponse struct {
-	conf.CloudDiskResponseBase
-	Path  string `json:"path"`
-	Size  int    `json:"size"`
-	Ctime int    `json:"ctime"`
-	Mtime int    `json:"mtime"`
-	Md5   string `json:"md5"`
-	FsID  uint64 `json:"fs_id"`
-	IsDir int    `json:"isdir"`
-}
-
-type PreCreateResponse struct {
-	conf.CloudDiskResponseBase
-	UploadID   string         `json:"uploadid"`
-	Path       string         `json:"path"`
-	ReturnType int            `json:"return_type"`
-	BlockList  []int          `json:"block_list"`
-	Info       UploadResponse `json:"info"`
-}
-
-type SuperFile2UploadResponse struct {
-	conf.PcsResponseBase
-	Md5      string `json:"md5"`
-	UploadID string `json:"uploadid"`
-	PartSeq  string `json:"partseq"` //pcsapi PHP版本返回的是int类型，Go版本返回的是string类型
-}
 
 type LocalFileInfo struct {
 	Md5  string
@@ -58,12 +31,6 @@ type Uploader struct {
 	LocalFilePath string
 }
 
-const (
-	PreCreateUri        = "/rest/2.0/xpan/file?method=precreate"
-	CreateUri           = "/rest/2.0/xpan/file?method=create"
-	Superfile2UploadUri = "/rest/2.0/pcs/superfile2?method=upload"
-)
-
 func NewUploader(accessToken, path, localFilePath string) *Uploader {
 	return &Uploader{
 		AccessToken:   accessToken,
@@ -72,7 +39,7 @@ func NewUploader(accessToken, path, localFilePath string) *Uploader {
 	}
 }
 
-// 上传文件到网盘，包括预创建、分片上传、创建3个步骤
+// Upload 上传文件到网盘，包括预创建、分片上传、创建3个步骤
 func (u *Uploader) Upload() (UploadResponse, error) {
 	var ret UploadResponse
 
@@ -149,7 +116,11 @@ func (u *Uploader) Upload() (UploadResponse, error) {
 			ret.ErrorCode = uploadResp.ErrorCode
 			ret.ErrorMsg = uploadResp.ErrorMsg
 			ret.RequestID = uploadResp.RequestID
-			return ret, errors.New("superfile2 upload part failed")
+			return ret, error_pan.NewBaiduPanError(
+				-1,
+				"superfile2 upload part failed",
+				"",
+			)
 		}
 
 		partSeq, err := strconv.Atoi(uploadResp.PartSeq)
@@ -238,7 +209,11 @@ func (u *Uploader) PreCreate() (PreCreateResponse, error) {
 	}
 
 	if ret.ErrorCode != 0 { //错误码不为0
-		return ret, errors.New(fmt.Sprintf("error_code:%d, error_msg:%s", ret.ErrorCode, ret.ErrorMsg))
+		return ret, error_pan.NewBaiduPanError(
+			ret.ErrorCode,
+			fmt.Sprintf("error_code:%d, error_msg:%s", ret.ErrorCode, ret.ErrorMsg),
+			strconv.FormatUint(ret.RequestID, 10),
+		)
 	}
 
 	return ret, nil
@@ -275,7 +250,11 @@ func (u *Uploader) SuperFile2Upload(uploadID string, partSeq int, partByte []byt
 
 	if ret.ErrorCode != 0 { //错误码不为0
 		log.Printf("upload failed, path[%s] response[%s]", path, string(resp))
-		return ret, errors.New(fmt.Sprintf("error_code:%d, error_msg:%s", ret.ErrorCode, ret.ErrorMsg))
+		return ret, error_pan.NewBaiduPanError(
+			ret.ErrorCode,
+			fmt.Sprintf("error_code:%d, error_msg:%s", ret.ErrorCode, ret.ErrorMsg),
+			strconv.FormatUint(ret.RequestID, 10),
+		)
 	}
 
 	return ret, nil
@@ -323,7 +302,11 @@ func (u *Uploader) Create(uploadID string, blockList []string) (UploadResponse, 
 
 	if ret.ErrorCode != 0 { //错误码不为0
 		log.Println("file create failed, resp:", string(resp.Body))
-		return ret, errors.New(fmt.Sprintf("error_code:%d, error_msg:%s", ret.ErrorCode, ret.ErrorMsg))
+		return ret, error_pan.NewBaiduPanError(
+			ret.ErrorCode,
+			fmt.Sprintf("error_code:%d, error_msg:%s", ret.ErrorCode, ret.ErrorMsg),
+			strconv.FormatUint(ret.RequestID, 10),
+		)
 	}
 
 	return ret, nil
