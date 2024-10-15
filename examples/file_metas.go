@@ -6,10 +6,12 @@ import (
 )
 
 func main() {
-	accessToken := "122.b0a9ab31cc24b429d460cd3ce1f1af97.Yn53jGAwd_1elGgODFvYl1sp9qOYVUDRiVawin5.tbNcEw"
+	accessToken := "121.0814add880b06b2b83aaf26bc9768a64.YBuxciRyVZ0o3JRsaX0g9xT1tGhoTth28q3ZhL8.tn1_EA"
 	fileClient := file.NewFileClient(accessToken)
-	fsIDs := []uint64{765773701501523}
-	res, err := fileClient.Metas(fsIDs)
+	fsIDs := []uint64{760976149817903}
+	option := fileClient.NewMetasOption()
+	option.FsIDs = fsIDs
+	res, err := fileClient.Metas(option)
 	if err != nil {
 		fmt.Println("err:", err)
 		return

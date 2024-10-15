@@ -9,6 +9,25 @@ package file
 
 import "github.com/duzhenlin/pan/conf"
 
+type CategoryListResponse struct {
+	conf.CloudDiskResponseBase
+	List []struct {
+		Category       int               `json:"category"`
+		FsId           int64             `json:"fs_id"`
+		IsDir          int               `json:"isdir"`
+		LocalCtime     int               `json:"local_ctime"`
+		LocalMtime     int               `json:"local_mtime"`
+		Md5            string            `json:"md5"`
+		Path           string            `json:"path"`
+		ServerCtime    int               `json:"server_ctime"`
+		ServerFilename string            `json:"server_filename"`
+		ServerMtime    int               `json:"server_mtime"`
+		Size           int               `json:"size"`
+		Thumbs         map[string]string `json:"thumbs"`
+	} `json:"list"`
+	RequestId string `json:"request_id"`
+}
+
 type ListResponse struct {
 	conf.CloudDiskResponseBase
 	List []struct {
@@ -19,7 +38,7 @@ type ListResponse struct {
 		IsDir          int               `json:"isdir"`
 		Category       int               `json:"category"`
 		Md5            string            `json:"md5"`
-		DirEmpty       string            `json:"dir_empty"`
+		DirEmpty       int               `json:"dir_empty"`
 		Thumbs         map[string]string `json:"thumbs"`
 		LocalCtime     int               `json:"local_ctime"`
 		LocalMtime     int               `json:"local_mtime"`

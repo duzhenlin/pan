@@ -7,7 +7,11 @@ import (
 
 func TestFile_List(t *testing.T) {
 	fileClient := NewFileClient(conf.TestData.AccessToken)
-	res, err := fileClient.List(conf.TestData.Dir, 0, 100)
+	option := fileClient.NewDefaultListOption()
+	option.Dir = conf.TestData.Dir
+	option.Start = 0
+	option.Limit = 100
+	res, err := fileClient.List(option)
 	if err != nil {
 		t.Errorf("TestList failed, err:%v", err)
 	}
@@ -16,7 +20,9 @@ func TestFile_List(t *testing.T) {
 
 func TestFile_Metas(t *testing.T) {
 	fileClient := NewFileClient(conf.TestData.AccessToken)
-	res, err := fileClient.Metas([]uint64{conf.TestData.FsID})
+	option := fileClient.NewMetasOption()
+	option.FsIDs = []uint64{conf.TestData.FsID}
+	res, err := fileClient.Metas(option)
 	if err != nil {
 		t.Errorf("TestMetas failed, err:%v", err)
 	}

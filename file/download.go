@@ -59,7 +59,9 @@ func (d *Downloader) Download() error {
 	} else if d.FsID != 0 {
 		// 根据fsID获取下载链接
 		fileClient := NewFileClient(d.AccessToken)
-		metas, err := fileClient.Metas([]uint64{d.FsID})
+		metasOption := fileClient.NewMetasOption()
+		metasOption.FsIDs = []uint64{d.FsID}
+		metas, err := fileClient.Metas(metasOption)
 		if err != nil {
 			log.Println("fileClient.Metas failed, err:", err)
 			return err
