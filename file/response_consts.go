@@ -13,7 +13,7 @@ type CategoryListResponse struct {
 	conf.CloudDiskResponseBase
 	List []struct {
 		Category       int               `json:"category"`
-		FsId           int64             `json:"fs_id"`
+		FsID           uint64            `json:"fs_id"`
 		IsDir          int               `json:"isdir"`
 		LocalCtime     int               `json:"local_ctime"`
 		LocalMtime     int               `json:"local_mtime"`
