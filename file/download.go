@@ -16,6 +16,7 @@ type Downloader struct {
 	Path          string
 	AccessToken   string
 	TotalPart     int
+	ProgressCh    chan int64
 }
 
 func NewDownloader(accessToken string, downloadLink string, localFilePath string) *Downloader {
@@ -99,7 +100,7 @@ func (d *Downloader) Download() error {
 
 	downloadLink += "&access_token=" + d.AccessToken
 	downloader := file.NewFileDownloader(downloadLink, d.LocalFilePath)
-
+	downloader.ProgressCh = d.ProgressCh
 	accountClient := account.NewAccountClient(d.AccessToken)
 	if userInfo, err := accountClient.UserInfo(); err == nil {
 		log.Println("VipType:", userInfo.VipType)

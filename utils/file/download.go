@@ -25,6 +25,7 @@ type Downloader struct {
 	DoneFilePart     []Part
 	PartSize         int
 	PartCoroutineNum int //分片下载协程数
+	ProgressCh       chan int64
 }
 
 // filePart 文件分片
@@ -77,7 +78,7 @@ func (d *Downloader) Download() error {
 	}
 
 	log.Println("fileTotalSize:", fileTotalSize)
-
+	d.ProgressCh <- int64(fileTotalSize)
 	if isSupportRange == false || fileTotalSize <= d.PartSize { //不支持Range下载或者文件比较小，直接下载文件
 		err := d.downloadWhole()
 		return err
@@ -125,6 +126,7 @@ func (d *Downloader) Download() error {
 	if len(jobs) < partCoroutineNum {
 		partCoroutineNum = len(jobs)
 	}
+
 	sem := make(chan int, partCoroutineNum) //限制并发数，以防大文件下载导致占用服务器大量网络宽带和磁盘io
 	for _, job := range jobs {
 		wg.Add(1)
@@ -136,6 +138,7 @@ func (d *Downloader) Download() error {
 				log.Println("下载文件失败:", err, job)
 				isFailed = true //TODO 可能会有问题
 			}
+			d.ProgressCh <- int64(job.To)
 			<-sem
 		}(job)
 	}
@@ -144,7 +147,8 @@ func (d *Downloader) Download() error {
 		log.Println("下载文件失败")
 		return errors.New("downloadPart failed")
 	}
-
+	d.ProgressCh <- int64(fileTotalSize)
+	close(d.ProgressCh)
 	return d.mergeFileParts()
 }
 
