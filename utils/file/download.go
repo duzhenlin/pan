@@ -336,7 +336,7 @@ func (d *Downloader) downloadWhole() error {
 	if err != nil {
 		return err
 	}
-
+	d.ProgressCh <- int64(d.FileSize)
 	return nil
 }
 
