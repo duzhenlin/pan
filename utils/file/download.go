@@ -128,18 +128,27 @@ func (d *Downloader) Download() error {
 	}
 
 	sem := make(chan int, partCoroutineNum) //限制并发数，以防大文件下载导致占用服务器大量网络宽带和磁盘io
+	const maxRetries = 3
 	for _, job := range jobs {
 		wg.Add(1)
 		sem <- 1 //当通道已满的时候将被阻塞
 		go func(job Part) {
 			defer wg.Done()
-			err := d.downloadPart(job)
-			if err != nil {
-				log.Println("下载文件失败:", err, job)
-				isFailed = true //TODO 可能会有问题
+			defer func() { <-sem }()
+			for i := 1; i <= maxRetries; i++ {
+				log.Printf("尝试第[%d]次下载文件分片[%d]", i, job.Index)
+				err = d.downloadPart(job)
+				if err == nil {
+					log.Printf("第[%d]下载文件分片成功[%d]", i, job.Index)
+					d.ProgressCh <- int64(job.To)
+					return
+				} else {
+					log.Println("下载文件失败:", err, job)
+					isFailed = true //TODO 可能会有问题
+				}
 			}
-			d.ProgressCh <- int64(job.To)
-			<-sem
+			log.Println("下载文件失败，达到最大重试次数:", job)
+			isFailed = true
 		}(job)
 	}
 	wg.Wait()

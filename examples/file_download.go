@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/duzhenlin/pan/file"
+	"sync"
 )
 
 func main() {
@@ -23,7 +24,10 @@ func main() {
 	fsID = 453508852020459
 	fileDownloader := file.NewDownloaderWithFsID(accessToken, fsID, localFilePath)
 	fileDownloader.ProgressCh = make(chan int64)
+	var wg sync.WaitGroup
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		if err := fileDownloader.Download(); err != nil {
 			fmt.Println("2.fileDownloader.DownloadWithFsID failed, err:", err)
 			return
@@ -40,7 +44,7 @@ func main() {
 	}
 
 	fmt.Println("2.fileDownloader.Download success")
-
+	wg.Wait() // 等待goroutine完成
 	// 方式3：通过文件路径下载，非开放平台公开接口，生产环境谨慎使用
 	//fileDownloader = file.NewDownloaderWithPath(conf.TestData.AccessToken, conf.TestData.Path, conf.TestData.LocalFilePath)
 	//err := fileDownloader.Download()
